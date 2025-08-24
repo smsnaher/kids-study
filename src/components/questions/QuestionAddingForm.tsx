@@ -12,10 +12,11 @@ type QuestionAddingFormProps = {
     onClose: () => void;
     onSubmit: () => void;
     sumNumbers: number[];
+    groupTypes: { id: string; type: string; mark: string }[];
     setSumNumbers: (numbers: number[]) => void;
 };
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 export const QuestionAddingForm: React.FC<QuestionAddingFormProps> = ({
     question,
@@ -26,26 +27,10 @@ export const QuestionAddingForm: React.FC<QuestionAddingFormProps> = ({
     onClose,
     onSubmit,
     sumNumbers,
+    groupTypes,
     setSumNumbers
 }) => {
-    const [groupTypes, setGroupTypes] = useState<{ id: string; type: string; mark: string }[]>([]);
     const [selectedGroup, setSelectedGroup] = useState<string>('');
-
-    useEffect(() => {
-        // Replace this with your actual fetchAllGroupTypes API call
-        async function fetchGroupTypes() {
-            // Fetch data from src/data/groupTypeService.ts
-            const data = await fetchAllGroupTypes();
-            // Ensure each group type has both id and name
-            const groupTypesWithName = data.map((item: any) => ({
-                id: item.id,
-                type: item.type && item.type,
-                mark: item.mark && item.mark
-            }));
-            setGroupTypes(groupTypesWithName);
-        }
-        fetchGroupTypes();
-    }, []);
 
     return (
         <form

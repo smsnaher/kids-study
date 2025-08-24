@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { addQuestionGroupType } from '../../data/groupTypeService';
+import React, { useEffect, useState } from 'react';
+import { addQuestionGroupType, fetchAllGroupTypes } from '../../data/groupTypeService';
 import styles from './ExamDetail.module.css';
 import { QuestionGroupType } from '../questions/QuestionGroupType';
 import { QuestionAddingForm } from '../questions/QuestionAddingForm';
@@ -32,6 +32,7 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   const [groupTypeError, setGroupTypeError] = useState<string | null>(null);
   const [groupTypeSuccess, setGroupTypeSuccess] = useState(false);
   const [groupTypeSaving, setGroupTypeSaving] = useState(false);
+  const [groupTypes, setGroupTypes] = useState<{ id: string; type: string; mark: string }[]>([]);
 
   // Handler to save group type to Firestore
   const handleAddType = async (type: string, mark: string) => {
@@ -41,6 +42,7 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
     setGroupTypeError(null);
     try {
       await addQuestionGroupType(examId, type, mark);
+      setGroupTypes(prev => [...prev, { id: examId, type, mark }]);
       setGroupTypeSuccess(true);
       setTimeout(() => setGroupTypeSuccess(false), 1200);
     } catch (err) {
@@ -49,6 +51,22 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
       setGroupTypeSaving(false);
     }
   };
+
+  useEffect(() => {
+    // Replace this with your actual fetchAllGroupTypes API call
+    async function fetchGroupTypes() {
+      // Fetch data from src/data/groupTypeService.ts
+      const data = await fetchAllGroupTypes();
+      // Ensure each group type has both id and name
+      const groupTypesWithName = data.map((item: any) => ({
+        id: item.id,
+        type: item.type && item.type,
+        mark: item.mark && item.mark
+      }));
+      setGroupTypes(groupTypesWithName);
+    }
+    fetchGroupTypes();
+  }, []);
 
   return (
     <div className={styles.modalOverlay}>
@@ -74,6 +92,7 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
           onClose={onClose}
           onSubmit={onSubmit}
           sumNumbers={sumNumbers.map(Number)}
+          groupTypes={groupTypes}
           setSumNumbers={(nums: number[]) => setSumNumbers(nums.map(String))}
         />
       </div>

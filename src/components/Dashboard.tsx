@@ -1,8 +1,8 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { logoutUser } from '../firebase/auth';
-import { StudentView } from './StudentView';
-import { TeacherView } from './TeacherView';
+import { StudentView } from './tabs/StudentView';
+import { TeacherView } from './tabs/TeacherView';
 
 const Dashboard: React.FC = () => {
   const { currentUser, userData, switchUserRole } = useAuth();

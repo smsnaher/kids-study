@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { addQuestionGroupType } from '../../data/groupTypeService';
+import { addQuestionGroupTypeCached } from '../../services/cachedDataService';
 import styles from './ExamDetail.module.css';
 import { QuestionGroupType } from '../questions/QuestionGroupType';
 import { QuestionAddingForm } from '../questions/QuestionAddingForm';
@@ -41,7 +41,7 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
     setGroupTypeSaving(true);
     setGroupTypeError(null);
     try {
-      await addQuestionGroupType(examId, type, mark);
+      await addQuestionGroupTypeCached(examId, type, mark);
       setGroupTypeSuccess(true);
       setTimeout(() => setGroupTypeSuccess(false), 1200);
     } catch (err) {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CreateExam } from "./tabs/CreateExam";
+import { CreateExam } from "./CreateExam";
 
 export const TeacherView: React.FC = () => {
     const [activeTab, setActiveTab] = useState(0);

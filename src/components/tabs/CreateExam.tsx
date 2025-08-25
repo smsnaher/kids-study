@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './CreateExam.module.css';
-import { db } from '../../firebase/config';
-import { collection, addDoc, query, where, getDocs, orderBy, deleteDoc, doc, Timestamp, updateDoc } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { ExamModal } from './ExamModal';
-
 import { useAuth } from '../../hooks/useAuth';
 import { getUUID } from '../../utils/utils';
+import { 
+  fetchExamsByUserIdCached, 
+  createExamCached, 
+  updateExamCached, 
+  deleteExamCached 
+} from '../../services/cachedDataService';
+import { CacheIndicator } from '../CacheIndicator';
 
 
 interface Exam {
@@ -44,34 +49,16 @@ export const CreateExam: React.FC = () => {
     };
 
     // Fetch exams for the current user
-    const fetchExams = async () => {
+    const fetchExams = async (forceRefresh: boolean = false) => {
         if (!currentUser) {
             setExams([]);
             return;
         }
-        // setListLoading(true);
         try {
-            const q = query(
-                collection(db, 'examinations'),
-                where('userId', '==', currentUser.uid),
-                orderBy('createdAt', 'desc')
-            );
-            const querySnapshot = await getDocs(q);
-            const docsData: Exam[] = querySnapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: data.id,
-                    name: data.name,
-                    userId: data.userId,
-                    createdAt: data.createdAt,
-                    docId: doc.id,
-                };
-            });
+            const docsData = await fetchExamsByUserIdCached(currentUser.uid, forceRefresh);
             setExams(docsData);
         } catch {
             setExams([]);
-        } finally {
-            // setListLoading(false);
         }
     };
 
@@ -93,19 +80,19 @@ export const CreateExam: React.FC = () => {
             setError('User not authenticated');
             return;
         }
-        // setLoading(true);
+        setLoading(true);
         setError(null);
         try {
             // Generate a short 9-character exam id
             const examId = getUUID(9);
-            await addDoc(collection(db, 'examinations'), {
+            await createExamCached({
                 id: examId,
                 name: examName,
                 userId: currentUser.uid,
                 createdAt: new Date(),
             });
             setSuccess(true);
-            await fetchExams(); // Refresh list after save
+            await fetchExams(true); // Force refresh after creating new exam
             setTimeout(() => {
                 // handleClose(); 
             }, 1000);
@@ -118,6 +105,7 @@ export const CreateExam: React.FC = () => {
 
     return (
         <div>
+            <CacheIndicator position="top-right" showDetails={true} />
             <div className={styles.heading}>
                 <h2>Create Exam</h2>
                 <button onClick={handleOpen}>Create Exam</button>
@@ -154,10 +142,10 @@ export const CreateExam: React.FC = () => {
                                             style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 4, padding: '2px 10px', cursor: 'pointer', marginRight: 4 }}
                                             onClick={async () => {
                                                 if (!editingName.trim()) return;
-                                                await updateDoc(doc(db, 'examinations', exam.docId), { name: editingName });
+                                                await updateExamCached(exam.docId, exam.id, exam.userId, { name: editingName });
                                                 setEditingId(null);
                                                 setEditingName('');
-                                                await fetchExams();
+                                                await fetchExams(true);
                                             }}
                                         >
                                             Save
@@ -193,8 +181,8 @@ export const CreateExam: React.FC = () => {
                                             style={{ marginLeft: 8, background: '#e74c3c', color: '#fff', border: 'none', borderRadius: 4, padding: '2px 10px', cursor: 'pointer' }}
                                             onClick={async () => {
                                                 if (window.confirm('Are you sure you want to delete this exam?')) {
-                                                    await deleteDoc(doc(db, 'examinations', exam.docId));
-                                                    await fetchExams();
+                                                    await deleteExamCached(exam.docId, exam.id, exam.userId);
+                                                    await fetchExams(true);
                                                 }
                                             }}
                                         >

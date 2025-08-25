@@ -1,4 +1,3 @@
-import { fetchAllUsers } from '../../data/userData';
 import type { User } from '../../data/userData';
 import React, { useState, useEffect, useContext, createContext } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
@@ -7,12 +6,11 @@ import { Link, useParams } from 'react-router-dom';
 import styles from './ExamDetail.module.css';
 import { getExamDetailById } from '../../data/examData';
 import type { Exam } from '../../data/examData';
-import { fetchQuestionsByExamId } from '../../data/questionData';
 import type { Question as BaseQuestion } from '../../data/questionData';
 import { sumAdminTemplate } from '../../utils/templates';
 import AddQuestionModal from './AddQuestionModal';
 import { handleSaveAssignments as serviceHandleSaveAssignments, handleAssignExam as serviceHandleAssignExam, handleAddQuestion as serviceHandleAddQuestion } from '../../services/TeacherExamDetail';
-import { fetchGroupTypesByExamId } from '../../data/groupTypeService';
+import { fetchQuestionsByExamIdCached, fetchAllUsersCached, fetchGroupTypesByExamIdCached, preloadCommonData } from '../../services/cachedDataService';
 
 interface QuestionGroup {
   id: string;
@@ -70,7 +68,7 @@ export const TeacherExamDetail: React.FC = () => {
     const refreshGroupTypes = async () => {
         if (exam) {
             try {
-                const groupTypesData = await fetchGroupTypesByExamId(exam.id || exam.docId);
+                const groupTypesData = await fetchGroupTypesByExamIdCached(exam.id || exam.docId);
                 const mappedGroupTypes = groupTypesData.map((item: any) => ({
                     id: item.id,
                     type: item.type || '',
@@ -105,7 +103,7 @@ export const TeacherExamDetail: React.FC = () => {
     };
     // Fetch all users on mount
     useEffect(() => {
-        fetchAllUsers().then(setUsers);
+        fetchAllUsersCached().then(setUsers);
     }, []);
     
     // Log group types changes for debugging
@@ -133,7 +131,7 @@ export const TeacherExamDetail: React.FC = () => {
         // Fetch questions for this exam when exam is loaded
         const fetchQuestions = async () => {
             if (exam) {
-                const qs = await fetchQuestionsByExamId(exam.id || exam.docId);
+                const qs = await fetchQuestionsByExamIdCached(exam.id || exam.docId);
                 // Sort by createdAt descending (handle Firestore Timestamp, Date, string, number)
                 const getDate = (val: unknown) => {
                     if (val && typeof (val as { toDate?: () => Date }).toDate === 'function') return (val as { toDate: () => Date }).toDate();
@@ -150,6 +148,11 @@ export const TeacherExamDetail: React.FC = () => {
             }
         };
         fetchQuestions();
+        
+        // Preload common data for better performance
+        if (exam) {
+            preloadCommonData(exam.id || exam.docId);
+        }
     }, [exam]);
 
     if (loading) return <div>Loading exam...</div>;

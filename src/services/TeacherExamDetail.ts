@@ -1,6 +1,8 @@
-import { saveQuestionToExam, fetchQuestionsByExamId } from '../data/questionData';
+import { saveQuestionToExam } from '../data/questionData';
+import { fetchQuestionsByExamIdCached } from './cachedDataService';
 import type { Question as BaseQuestion } from '../data/questionData';
 import { assignExamToUsers } from '../data/examAssignmentData';
+import { invalidateRelatedCaches } from '../utils/dataCache';
 
 interface QuestionWithData extends BaseQuestion {
     data?: number[];
@@ -40,7 +42,7 @@ export const handleAddQuestion = async (
         setShowForm(false);
         // Refresh questions from Firestore
         if (exam) {
-            const qs = await fetchQuestionsByExamId(exam.id || exam.docId);
+            const qs = await fetchQuestionsByExamIdCached(exam.id || exam.docId);
             // Sort by createdAt descending (handle Firestore Timestamp, Date, string, number)
             const getDate = (val: unknown) => {
                 if (val && typeof (val as { toDate?: () => Date }).toDate === 'function') return (val as { toDate: () => Date }).toDate();
@@ -48,13 +50,15 @@ export const handleAddQuestion = async (
                 if (typeof val === 'string' || typeof val === 'number') return new Date(val);
                 return new Date();
             };
-            qs.sort((a, b) => {
+            qs.sort((a: any, b: any) => {
                 const aDate = getDate(a.createdAt);
                 const bDate = getDate(b.createdAt);
                 return aDate.getTime() - bDate.getTime();
             });
             setQuestions(qs);
         }
+        // Invalidate related caches
+        invalidateRelatedCaches.onQuestionAdd(exam.id || exam.docId);
     } catch {
         setError('Failed to save question');
     } finally {
@@ -82,6 +86,11 @@ export const handleSaveAssignments = async (
         await assignExamToUsers(exam.id || exam.docId, selectedUserIds, false);
         setAssignSuccess(true);
         setTimeout(() => setAssignSuccess(false), 1500);
+        
+        // Invalidate student caches for all assigned users
+        selectedUserIds.forEach(userId => {
+            invalidateRelatedCaches.onExamAssignment(userId);
+        });
     } catch {
         setAssignError('Failed to save assignments.');
     } finally {
@@ -109,6 +118,11 @@ export const handleAssignExam = async (
         await assignExamToUsers(exam.id || exam.docId, selectedUserIds, true);
         setAssignSuccess(true);
         setTimeout(() => setAssignSuccess(false), 1500);
+        
+        // Invalidate student caches for all assigned users
+        selectedUserIds.forEach(userId => {
+            invalidateRelatedCaches.onExamAssignment(userId);
+        });
     } catch {
         setAssignError('Failed to assign exam.');
     } finally {

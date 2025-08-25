@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import styles from '../tabs/ExamDetail.module.css';
-import { QuestionGroupContext } from '../tabs/AddQuestionModal';
+import { QuestionGroupContext } from '../tabs/TeacherExamDetail';
 
 interface GroupType {
     id: string;
@@ -11,24 +11,23 @@ interface GroupType {
 interface QuestionTypeGroupProps {
     saving: boolean;
     onAddType: (type: string, mark: string) => void;
-    groupTypes: { id: string; type: string; mark: string }[];
 }
 
 
-export const QuestionGroupType: React.FC<QuestionTypeGroupProps> = ({ saving, onAddType, groupTypes }) => {
+export const QuestionGroupType: React.FC<QuestionTypeGroupProps> = ({ saving, onAddType }) => {
     const [type, setType] = useState('');
     const [mark, setMark] = useState('');
     const [view, setView] = useState(false);
-    const { setGroupTypesSelected } = useContext(QuestionGroupContext);
-    const { setGroupTypes } = useContext(QuestionGroupContext);
+    const { groupTypes, setGroupTypes, setGroupTypesSelected, refreshGroupTypes } = useContext(QuestionGroupContext);
 
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         onAddType(type, mark);
         setType('');
         setMark('');
-
+        // Refresh group types after adding a new one
+        await refreshGroupTypes();
     };
 
     const addGroupType = (groupType: { id: string; type: string; mark: string }) => {
@@ -59,7 +58,7 @@ export const QuestionGroupType: React.FC<QuestionTypeGroupProps> = ({ saving, on
                             <p>No group types available.</p>
                         ) : (
                             <ul>
-                                {groupTypes.map(gt => (
+                                {groupTypes.map((gt: GroupType) => (
                                     <li key={gt.id} onClick={() => addGroupType(gt)}>
                                         {gt.type} - {gt.mark} marks
                                     </li>

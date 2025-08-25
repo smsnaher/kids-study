@@ -6,7 +6,7 @@ import { collection, addDoc, query, where, getDocs, orderBy, deleteDoc, doc, Tim
 import { ExamModal } from './ExamModal';
 
 import { useAuth } from '../../hooks/useAuth';
-import { v4 as uuidv4 } from 'uuid';
+import { getUUID } from '../../utils/utils';
 
 
 interface Exam {
@@ -97,7 +97,7 @@ export const CreateExam: React.FC = () => {
         setError(null);
         try {
             // Generate a short 9-character exam id
-            const examId = uuidv4().replace(/-/g, '').slice(0, 9);
+            const examId = getUUID(9);
             await addDoc(collection(db, 'examinations'), {
                 id: examId,
                 name: examName,

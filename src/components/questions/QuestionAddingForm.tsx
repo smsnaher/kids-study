@@ -1,8 +1,8 @@
 import SumQuestion from '../questions/SumQuestion';
 import SubtractionQuestion from '../questions/SubtractionQuestion';
 import styles from '../tabs/ExamDetail.module.css';
-import React, { useState, useContext, useEffect } from 'react';
-import { QuestionGroupContext } from '../tabs/AddQuestionModal';
+import React, { useState, useContext } from 'react';
+import { QuestionGroupContext } from '../tabs/TeacherExamDetail';
 
 type QuestionAddingFormProps = {
     question: string;
@@ -44,8 +44,6 @@ export const QuestionAddingForm: React.FC<QuestionAddingFormProps> = ({
                         <>
                             <h4>Question Group</h4>
                             {groupTypesSelected.map(type => {
-                                console.log(type);
-
                                 return (
                                     <div key={type.id}>
                                         <label>

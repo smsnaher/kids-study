@@ -1,16 +1,40 @@
-import { assignExamToUsers } from '../../data/examAssignmentData';
 import { fetchAllUsers } from '../../data/userData';
 import type { User } from '../../data/userData';
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, createContext } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 import { Link, useParams } from 'react-router-dom';
 import styles from './ExamDetail.module.css';
 import { getExamDetailById } from '../../data/examData';
 import type { Exam } from '../../data/examData';
-import { saveQuestionToExam, fetchQuestionsByExamId } from '../../data/questionData';
+import { fetchQuestionsByExamId } from '../../data/questionData';
 import type { Question as BaseQuestion } from '../../data/questionData';
 import { sumAdminTemplate } from '../../utils/templates';
 import AddQuestionModal from './AddQuestionModal';
+import { handleSaveAssignments as serviceHandleSaveAssignments, handleAssignExam as serviceHandleAssignExam, handleAddQuestion as serviceHandleAddQuestion } from '../../services/TeacherExamDetail';
+import { fetchGroupTypesByExamId } from '../../data/groupTypeService';
+
+interface QuestionGroup {
+  id: string;
+  type: string;
+  mark: string;
+}
+
+interface QuestionGroupContextType {
+  groupTypes: QuestionGroup[];
+  setGroupTypes: Dispatch<SetStateAction<QuestionGroup[]>>;
+  groupTypesSelected: QuestionGroup[];
+  setGroupTypesSelected: Dispatch<SetStateAction<QuestionGroup[]>>;
+  refreshGroupTypes: () => Promise<void>;
+}
+
+export const QuestionGroupContext = createContext<QuestionGroupContextType>({
+  groupTypes: [],
+  setGroupTypes: () => { },
+  groupTypesSelected: [],
+  setGroupTypesSelected: () => { },
+  refreshGroupTypes: async () => { },
+});
 
 interface QuestionWithData extends BaseQuestion {
     data?: number[];
@@ -37,51 +61,62 @@ export const TeacherExamDetail: React.FC = () => {
     const [assigning, setAssigning] = useState(false);
     const [assignSuccess, setAssignSuccess] = useState(false);
     const [assignError, setAssignError] = useState<string | null>(null);
+    
+    // Context state for question groups
+    const [groupTypes, setGroupTypes] = useState<QuestionGroup[]>([]);
+    const [groupTypesSelected, setGroupTypesSelected] = useState<QuestionGroup[]>([]);
+    
+    // Function to refresh group types from database
+    const refreshGroupTypes = async () => {
+        if (exam) {
+            try {
+                const groupTypesData = await fetchGroupTypesByExamId(exam.id || exam.docId);
+                const mappedGroupTypes = groupTypesData.map((item: any) => ({
+                    id: item.id,
+                    type: item.type || '',
+                    mark: item.mark || ''
+                }));
+                setGroupTypes(mappedGroupTypes);
+            } catch (error) {
+                console.error('Failed to refresh group types:', error);
+            }
+        }
+    };
     // Save assignments only
     const handleSaveAssignments = async () => {
-        if (!exam) return;
-        const selectedUserIds = Object.keys(assigned).filter(uid => assigned[uid]);
-        if (selectedUserIds.length === 0) {
-            setAssignError('Please select at least one user.');
-            return;
-        }
-        setAssigning(true);
-        setAssignError(null);
-        try {
-            await assignExamToUsers(exam.id || exam.docId, selectedUserIds, false);
-            setAssignSuccess(true);
-            setTimeout(() => setAssignSuccess(false), 1500);
-        } catch {
-            setAssignError('Failed to save assignments.');
-        } finally {
-            setAssigning(false);
-        }
+        await serviceHandleSaveAssignments(
+            exam,
+            assigned,
+            setAssigning,
+            setAssignError,
+            setAssignSuccess
+        );
     };
 
     // Save & Assign (submitted)
     const handleAssignExam = async () => {
-        if (!exam) return;
-        const selectedUserIds = Object.keys(assigned).filter(uid => assigned[uid]);
-        if (selectedUserIds.length === 0) {
-            setAssignError('Please select at least one user.');
-            return;
-        }
-        setAssigning(true);
-        setAssignError(null);
-        try {
-            await assignExamToUsers(exam.id || exam.docId, selectedUserIds, true);
-            setAssignSuccess(true);
-            setTimeout(() => setAssignSuccess(false), 1500);
-        } catch {
-            setAssignError('Failed to assign exam.');
-        } finally {
-            setAssigning(false);
-        }
+        await serviceHandleAssignExam(
+            exam,
+            assigned,
+            setAssigning,
+            setAssignError,
+            setAssignSuccess
+        );
     };
     // Fetch all users on mount
     useEffect(() => {
         fetchAllUsers().then(setUsers);
     }, []);
+    
+    // Log group types changes for debugging
+    useEffect(() => {
+        console.log('Group types updated:', groupTypes);
+    }, [groupTypes]);
+    
+    // Fetch group types when exam is loaded
+    useEffect(() => {
+        refreshGroupTypes();
+    }, [exam]);
     // Handler for assigning/unassigning students
     const handleAssign = (uid: string) => {
         setAssigned(a => ({ ...a, [uid]: !a[uid] }));
@@ -93,51 +128,6 @@ export const TeacherExamDetail: React.FC = () => {
             getExamDetailById(id, setExam, setLoading, setFetchError);
         }
     }, [id]);
-
-    const handleAddQuestion = async () => {
-        console.log(exam);
-        
-        if (!question.trim() || !exam) {
-            setError('Question is required');
-            return;
-        }
-        setSaving(true);
-        setError(null);
-        try {
-            if (question === 'sum') {
-                // Convert string inputs to numbers, filter out empty
-                const nums = sumNumbers.map(n => Number(n)).filter(n => !isNaN(n));
-                await saveQuestionToExam(exam.id || exam.docId, question, nums);
-            } else {
-                await saveQuestionToExam(exam.id || exam.docId, question);
-            }
-            setSuccess(true);
-            setQuestion('');
-            setTimeout(() => setSuccess(false), 1200);
-            setShowForm(false);
-            // Refresh questions from Firestore
-            if (exam) {
-                const qs = await fetchQuestionsByExamId(exam.id || exam.docId);
-                // Sort by createdAt descending (handle Firestore Timestamp, Date, string, number)
-                const getDate = (val: unknown) => {
-                    if (val && typeof (val as { toDate?: () => Date }).toDate === 'function') return (val as { toDate: () => Date }).toDate();
-                    if (val instanceof Date) return val;
-                    if (typeof val === 'string' || typeof val === 'number') return new Date(val);
-                    return new Date();
-                };
-                qs.sort((a, b) => {
-                    const aDate = getDate(a.createdAt);
-                    const bDate = getDate(b.createdAt);
-                    return aDate.getTime() - bDate.getTime();
-                });
-                setQuestions(qs);
-            }
-        } catch {
-            setError('Failed to save question');
-        } finally {
-            setSaving(false);
-        }
-    };
 
     useEffect(() => {
         // Fetch questions for this exam when exam is loaded
@@ -167,7 +157,8 @@ export const TeacherExamDetail: React.FC = () => {
     if (!exam) return null;
 
     return (
-        <div className={styles.examDetailContainer}>
+        <QuestionGroupContext.Provider value={{ groupTypes, setGroupTypes, groupTypesSelected, setGroupTypesSelected, refreshGroupTypes }}>
+            <div className={styles.examDetailContainer}>
             <div className={styles.examDetail}>
                 <div className={styles.examDetailHeader}>
                     <Link to="/kids-study/" className={styles.backBtn}>← Back to Dashboard</Link>
@@ -197,7 +188,18 @@ export const TeacherExamDetail: React.FC = () => {
                     error={error}
                     success={success}
                     onClose={() => { setShowForm(false); setError(null); setQuestion(''); setSumNumbers(["", ""]); }}
-                    onSubmit={handleAddQuestion}
+                    onSubmit={(selectedGroupId?: string) => serviceHandleAddQuestion(
+                        question,
+                        exam,
+                        sumNumbers,
+                        setError,
+                        setSaving,
+                        setSuccess,
+                        setQuestion,
+                        setShowForm,
+                        setQuestions,
+                        selectedGroupId
+                    )}
                     sumNumbers={sumNumbers}
                     setSumNumbers={setSumNumbers}
                 />
@@ -259,5 +261,6 @@ export const TeacherExamDetail: React.FC = () => {
                 </ul>
             )}
         </div>
+        </QuestionGroupContext.Provider>
     );
 };

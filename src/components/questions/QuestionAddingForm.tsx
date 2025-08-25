@@ -39,26 +39,31 @@ export const QuestionAddingForm: React.FC<QuestionAddingFormProps> = ({
         >
             {/* fetch group types here to make a radio button from fetchAllGroupTypes */}
             <div>
-                <h4>Question Group</h4>
-                {/* Map through the fetched group types and create a radio button for each */}
-                {groupTypesSelected && groupTypesSelected.map(type => {
-                    console.log(type);
+                {groupTypesSelected &&
+                    (
+                        <>
+                            <h4>Question Group</h4>
+                            {groupTypesSelected.map(type => {
+                                console.log(type);
 
-                    return (
-                        <div key={type.id}>
-                            <label>
-                                <input
-                                    type="radio"
-                                    name="questionGroup"
-                                    value={type.id}
-                                    checked={selectedGroup === type.id}
-                                    onChange={() => setSelectedGroup(type.id)}
-                                />
-                                {type.type} {type.mark}
-                            </label>
-                        </div>
+                                return (
+                                    <div key={type.id}>
+                                        <label>
+                                            <input
+                                                type="radio"
+                                                name="questionGroup"
+                                                value={type.id}
+                                                checked={selectedGroup === type.id}
+                                                onChange={() => setSelectedGroup(type.id)}
+                                            />
+                                            {type.type} {type.mark}
+                                        </label>
+                                    </div>
+                                )
+                            })}
+                        </>
                     )
-                })}
+                }
             </div>
 
             <h3 style={{ marginTop: 0 }}>Add Question</h3>

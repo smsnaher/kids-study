@@ -44,7 +44,7 @@ export const QuestionGroupType: React.FC<QuestionTypeGroupProps> = ({ saving, on
     return (
         <>
             <form style={{ marginBottom: 24, position: 'relative' }} onSubmit={handleSubmit}>
-                <input type="text" placeholder="Question Type" value={type} onChange={e => setType(e.target.value)} onFocus={() => setView(true)} /* onBlur={() => setView(false)} */ />
+                <input type="text" placeholder="Question Type" value={type} onChange={e => setType(e.target.value)} onFocus={() => setView(true)} />
                 <input type="text" placeholder="Marks" value={mark} onChange={e => setMark(e.target.value)} />
                 <button type="submit" disabled={saving}>
                     {saving ? 'Saving...' : 'Save'}

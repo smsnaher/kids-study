@@ -1,8 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createContext } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { addQuestionGroupType, fetchAllGroupTypes } from '../../data/groupTypeService';
 import styles from './ExamDetail.module.css';
 import { QuestionGroupType } from '../questions/QuestionGroupType';
 import { QuestionAddingForm } from '../questions/QuestionAddingForm';
+
+
+interface QuestionGroup {
+  id: string;
+  type: string;
+  mark: string;
+}
+
+interface QuestionGroupContextType {
+  groupTypes: QuestionGroup[];
+  setGroupTypes: Dispatch<SetStateAction<QuestionGroup[]>>;
+  groupTypesSelected: QuestionGroup[];
+  setGroupTypesSelected: Dispatch<SetStateAction<QuestionGroup[]>>;
+}
+
+export const QuestionGroupContext = createContext<QuestionGroupContextType>({
+  groupTypes: [],
+  setGroupTypes: () => { },
+  groupTypesSelected: [],
+  setGroupTypesSelected: () => { },
+});
 
 interface AddQuestionModalProps {
   examId: string;
@@ -33,6 +55,7 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   const [groupTypeSuccess, setGroupTypeSuccess] = useState(false);
   const [groupTypeSaving, setGroupTypeSaving] = useState(false);
   const [groupTypes, setGroupTypes] = useState<{ id: string; type: string; mark: string }[]>([]);
+  const [groupTypesSelected, setGroupTypesSelected] = useState<QuestionGroup[]>([]);
 
   // Handler to save group type to Firestore
   const handleAddType = async (type: string, mark: string) => {
@@ -69,34 +92,37 @@ const AddQuestionModal: React.FC<AddQuestionModalProps> = ({
   }, []);
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
-        <div className={styles.modalHeader}>
-          <h3 style={{ marginTop: 0 }}>Question Group</h3>
-          <button onClick={onClose} className={styles.closeBtn}>&times;</button>
+    /* add a provider to share state info between components */
+    <QuestionGroupContext.Provider value={{ groupTypes, setGroupTypes, groupTypesSelected, setGroupTypesSelected }}>
+      <div className={styles.modalOverlay}>
+        <div className={styles.modal}>
+          <div className={styles.modalHeader}>
+            <h3 style={{ marginTop: 0 }}>Question Group</h3>
+            <button onClick={onClose} className={styles.closeBtn}>&times;</button>
+          </div>
+
+          <QuestionGroupType
+            saving={groupTypeSaving}
+            onAddType={handleAddType}
+            groupTypes={groupTypes}
+          />
+          {groupTypeError && <div className={styles.error}>{groupTypeError}</div>}
+          {groupTypeSuccess && <div className={styles.success}>Group type added!</div>}
+
+          <QuestionAddingForm
+            question={question}
+            setQuestion={setQuestion}
+            saving={saving}
+            error={error ?? undefined}
+            success={success}
+            onClose={onClose}
+            onSubmit={onSubmit}
+            sumNumbers={sumNumbers.map(Number)}
+            setSumNumbers={(nums: number[]) => setSumNumbers(nums.map(String))}
+          />
         </div>
-
-        <QuestionGroupType
-          saving={groupTypeSaving}
-          onAddType={handleAddType}
-        />
-        {groupTypeError && <div className={styles.error}>{groupTypeError}</div>}
-        {groupTypeSuccess && <div className={styles.success}>Group type added!</div>}
-
-        <QuestionAddingForm
-          question={question}
-          setQuestion={setQuestion}
-          saving={saving}
-          error={error ?? undefined}
-          success={success}
-          onClose={onClose}
-          onSubmit={onSubmit}
-          sumNumbers={sumNumbers.map(Number)}
-          groupTypes={groupTypes}
-          setSumNumbers={(nums: number[]) => setSumNumbers(nums.map(String))}
-        />
       </div>
-    </div>
+    </QuestionGroupContext.Provider>
   );
 };
 

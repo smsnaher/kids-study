@@ -1,7 +1,8 @@
 import SumQuestion from '../questions/SumQuestion';
 import SubtractionQuestion from '../questions/SubtractionQuestion';
 import styles from '../tabs/ExamDetail.module.css';
-import { fetchAllGroupTypes } from '../../data/groupTypeService';
+import React, { useState, useContext } from 'react';
+import { QuestionGroupContext } from '../tabs/AddQuestionModal';
 
 type QuestionAddingFormProps = {
     question: string;
@@ -12,11 +13,8 @@ type QuestionAddingFormProps = {
     onClose: () => void;
     onSubmit: () => void;
     sumNumbers: number[];
-    groupTypes: { id: string; type: string; mark: string }[];
     setSumNumbers: (numbers: number[]) => void;
 };
-
-import React, { useState } from 'react';
 
 export const QuestionAddingForm: React.FC<QuestionAddingFormProps> = ({
     question,
@@ -27,10 +25,10 @@ export const QuestionAddingForm: React.FC<QuestionAddingFormProps> = ({
     onClose,
     onSubmit,
     sumNumbers,
-    groupTypes,
-    setSumNumbers
+    setSumNumbers,
 }) => {
     const [selectedGroup, setSelectedGroup] = useState<string>('');
+    const { groupTypesSelected } = useContext(QuestionGroupContext);
 
     return (
         <form
@@ -43,20 +41,24 @@ export const QuestionAddingForm: React.FC<QuestionAddingFormProps> = ({
             <div>
                 <h4>Question Group</h4>
                 {/* Map through the fetched group types and create a radio button for each */}
-                {groupTypes.map(type => (
-                    <div key={type.id}>
-                        <label>
-                            <input
-                                type="radio"
-                                name="questionGroup"
-                                value={type.id}
-                                checked={selectedGroup === type.id}
-                                onChange={() => setSelectedGroup(type.id)}
-                            />
-                            {type.type} {type.mark}
-                        </label>
-                    </div>
-                ))}
+                {groupTypesSelected && groupTypesSelected.map(type => {
+                    console.log(type);
+
+                    return (
+                        <div key={type.id}>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="questionGroup"
+                                    value={type.id}
+                                    checked={selectedGroup === type.id}
+                                    onChange={() => setSelectedGroup(type.id)}
+                                />
+                                {type.type} {type.mark}
+                            </label>
+                        </div>
+                    )
+                })}
             </div>
 
             <h3 style={{ marginTop: 0 }}>Add Question</h3>

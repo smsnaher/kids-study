@@ -17,8 +17,30 @@
   align-items: center;
   justify-content: space-between;
 }
+.existingGroups {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  position: absolute;
+  top: 100%;
+  background-color: #fff;
 
+  ul {
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
 
+    li {
+      &:not(:last-child) {
+        border-bottom: 1px solid #eee;
+      }
+      &:hover{
+        background-color: #f0f0f0;
+      }
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+  }
+}
 
 .modalOverlay {
   position: fixed;

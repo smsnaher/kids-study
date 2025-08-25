@@ -34,7 +34,7 @@ interface AddQuestionModalProps {
   error: string | null;
   success: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (selectedGroupId?: string) => void;
   sumNumbers: string[];
   setSumNumbers: (nums: string[]) => void;
 }

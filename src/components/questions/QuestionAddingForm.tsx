@@ -1,7 +1,7 @@
 import SumQuestion from '../questions/SumQuestion';
 import SubtractionQuestion from '../questions/SubtractionQuestion';
 import styles from '../tabs/ExamDetail.module.css';
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { QuestionGroupContext } from '../tabs/AddQuestionModal';
 
 type QuestionAddingFormProps = {
@@ -11,7 +11,7 @@ type QuestionAddingFormProps = {
     error?: string;
     success?: boolean;
     onClose: () => void;
-    onSubmit: () => void;
+    onSubmit: (selectedGroupId?: string) => void;
     sumNumbers: number[];
     setSumNumbers: (numbers: number[]) => void;
 };
@@ -34,12 +34,12 @@ export const QuestionAddingForm: React.FC<QuestionAddingFormProps> = ({
         <form
             onSubmit={e => {
                 e.preventDefault();
-                onSubmit();
+                onSubmit(selectedGroup || undefined);
             }}
         >
             {/* fetch group types here to make a radio button from fetchAllGroupTypes */}
             <div>
-                {groupTypesSelected &&
+                {groupTypesSelected.length !== 0 &&
                     (
                         <>
                             <h4>Question Group</h4>

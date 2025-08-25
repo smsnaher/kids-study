@@ -1,4 +1,3 @@
-
 import React, { useState, useContext } from 'react';
 import styles from '../tabs/ExamDetail.module.css';
 import { QuestionGroupContext } from '../tabs/AddQuestionModal';
@@ -21,23 +20,28 @@ export const QuestionGroupType: React.FC<QuestionTypeGroupProps> = ({ saving, on
     const [mark, setMark] = useState('');
     const [view, setView] = useState(false);
     const { setGroupTypesSelected } = useContext(QuestionGroupContext);
-    
+    const { setGroupTypes } = useContext(QuestionGroupContext);
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onAddType(type, mark);
         setType('');
         setMark('');
-        
+
     };
 
     const addGroupType = (groupType: { id: string; type: string; mark: string }) => {
         console.log(groupType);
 
+        setGroupTypes((prev: GroupType[]) => prev.filter(gt => gt.id !== groupType.id));
+
         setGroupTypesSelected((prev: GroupType[]) => [
             ...prev,
             { id: groupType.id, type: groupType.type, mark: groupType.mark }
         ]);
+
+
         setView(false);
     };
 

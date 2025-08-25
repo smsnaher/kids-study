@@ -95,6 +95,8 @@ export const TeacherExamDetail: React.FC = () => {
     }, [id]);
 
     const handleAddQuestion = async () => {
+        console.log(exam);
+        
         if (!question.trim() || !exam) {
             setError('Question is required');
             return;
